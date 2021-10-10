@@ -27,13 +27,13 @@ The implementation stores the index of the object inside `__builtins__.__dict__`
 . You might be wondering why a dictionary has an index? A Python dictionary
 contains an array of integer indices. These indices lead to the actual object
 inside the dictionary (assuming no hash collision). To learn more, I recommend
-reading either https://github.com/zpoint/CPython-Internals or watching Raymond
-Hettinger's PyCon talks on dictionaries.
+reading either [zpoint's excellent dict docs](https://github.com/zpoint/CPython-Internals/blob/master/BasicObject/dict/dict.md)
+or watching Raymond Hettinger's PyCon talks on dictionaries.
 
-This reduces LOAD_GLOBAL from two dictionary lookups (one for globals() and one
-for `__builtins__.__dict__`) to zero. Effectively making `LOAD_GLOBAL` free (
-other than some pointer arithmetic and interpreter overhead). `LOAD_GLOBAL` can
-be made faster by only unboxing values or JIT.
+Specialization reduces `LOAD_GLOBAL` from two dictionary lookups (one for
+`globals()` and one for `__builtins__.__dict__`) to zero. Effectively making
+`LOAD_GLOBAL` free (other than some pointer arithmetic and interpreter overhead).
+`LOAD_GLOBAL` can be made faster by only unboxing values or JIT.
 
 ### LOAD_GLOBAL_MODULE
 
@@ -48,28 +48,26 @@ different infrastructure called the "opcache".
 
 In Python 3.8, Yury and Inada-san worked on
 a [`LOAD_GLOBAL` inline cache](https://github.com/python/cpython/pull/12884)
-which cached the address (
-pointer) of the lookup result. This saved us two dictionary lookups into
-`globals()` and `__builtins__` on every `len` function call assuming both
-dictionaries didn't change. The optimization sped up `LOAD_GLOBAL` by 40%. This
-was a gigantic leap forward for CPython at the time.
+which cached the address (pointer) of the lookup result. This saved us two
+dictionary lookups into `globals()` and `__builtins__` on every `len` function
+call assuming both dictionaries didn't change. The optimization sped up
+`LOAD_GLOBAL` by 40%. This was a gigantic leap forward for CPython at the time.
 
 The newer implementation has a few major improvements:
 
 - The old opcache stored a pointer to the actual object required. This requires
-  more stringent checks (otherwise we could be accessing a dangling pointer!).
+  stricter checks (otherwise we could be accessing a dangling pointer!).
   In 3.11, only the index of the dict is stored. Which is safe once the key is
   checked (this is a cheap pointer comparison). This is not only safer, but
   allows for the next optimization:
 - The old opcache used the version information of the entire dict as a guard (
-  see PEP 509). This means when any value in globals() or __builtins__ changed,
+  see PEP 509). This means when any value in `globals()` or `__builtins__` changed,
   the cache was invalidated. In the new 3.11 version, only the version of the
   dictionary's *keys* are used. Since we only cache the index (and not the
-  object)
-  , we don't need to care if the value changed, the location for a key's value
+  object), we don't need to care if the value changed, the location for a key's value
   is still at the same index (as long as the keys didn't change too)! This makes
   cache invalidation less frequent.
-- A new LOAD_GLOBAL_MODULE for uncommon case of variable in `globals()`.
+- A new `LOAD_GLOBAL_MODULE` for uncommon case of variable in `globals()`.
 
 ## LOAD_ATTR
 
@@ -163,29 +161,28 @@ version tag) and a method's name to a descriptor `PyObject *` (borrowed)
 . (https://github.com/python/cpython/blob/8c1e1da565bca9cec792323eb728e288715ef7c4/Objects/typeobject.c#L3795)
 . The idea is that if a type's MRO (and the MRO of any types it inherits from)
 isn't modified, then we can just return the cached descriptor. This is used in
-every _PyType_Lookup.
+every `_PyType_Lookup`.
 
 The CPython 3.11 LOAD_METHOD inline cache improves on the type method cache in a
 few ways. It's faster because it avoids a few function calls and hashing.
 Additionally, type method caches work well for programs that call a small set of
 methods frequently. In CPython, the type method cache can only store 4096
 methods. This means a program calling a wide range of Python methods along with
-builtin methods may exhaust the cache. LOAD_METHOD specialization may suffer
+builtin methods may exhaust the cache. `LOAD_METHOD` specialization may suffer
 from polymorphic method calling code, but that's quite uncommon in Python (and
 also already covered by the type method cache).
 
 #### LOAD_METHOD in the old opcache infrastructure
 
-Similar to LOAD_GLOBAL and LOAD_ATTR, I'll be comparing the 3.11 version with
-the old opcache version. There was an attempt to add LOAD_METHOD to the opcache
+Similar to `LOAD_GLOBAL` and `LOAD_ATTR`, I'll be comparing the 3.11 version with
+the old opcache version. There was an attempt to add `LOAD_METHOD` to the opcache
 infrastructure in 3.10. But the benchmark numbers at the time were reportedly
-not good. So it was never
-added https://github.com/python/cpython/pull/23503/files
+not good. So it was never added https://github.com/python/cpython/pull/23503/files
 
 After writing the 3.11 implementation, I stumbled upon that PR when trying to
 debug some obscure method cache bug. It's partially thanks to that PR I was able
 to find out that the `tp_version_tag` was
-bugged https://bugs.python.org/issue44914.
+[bugged in 3.11](https://bugs.python.org/issue44914).
 
 The idea is mostly the same, but the 3.11 version has some improvements which
 allowed it to be faster:
@@ -195,8 +192,8 @@ keywords still used `LOAD_ATTR` and
 - 3.11 requires less guards.
 - 3.11 specializes for some other common forms.
 - Most importantly: 3.11 has no dictionary lookup to determine if things are an 
-  attribute! If the 10 version used ma_version_tag to avoid a dictionary lookup,
-  it might've been as fast as the 3.11 version. (or maybe not? since python
+  attribute! If the 10 version used `dict->ma_version_tag` to avoid a dictionary
+  lookup, it might've been as fast as the 3.11 version. (or maybe not? since Python
   classes set their  instance attributes often, which means frequent opcache
   invalidation in 3.10).
 

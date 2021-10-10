@@ -10,9 +10,9 @@ instructions (termed bytecode) for the CPython interpreter to execute. Most
 bytecodes are extremely generalized to simplify the interpreter. This is where
 the idea of specialization comes in -- if we can create specialized bytecode for
 certain commonly-executed operations, then we can greatly boost their
-performance! The other main idea is inline caching
-(https://en.wikipedia.org/wiki/Inline_caching), which caches the result of an
-expensive operation at the instruction itself.
+performance! The other main idea is
+[inline caching](https://en.wikipedia.org/wiki/Inline_caching), which caches
+the result of an expensive operation at the instruction itself.
 
 Specialization will have no discernible difference to end users other than
 faster code. The current implementation falls back to the general instruction
@@ -26,20 +26,17 @@ Here are the main steps taken by the interpreter at runtime:
 
 1. If a general instruction is executed frequently, swap out a general
    instruction for an adaptive instruction.
-2. The adaptive instruction finds a specialized (
-   faster) instruction to use for its current scenario. If found, swap out the
-   adaptive instruction for a specialized one. Simultaneously, cache any
-   useful (
-   expensive) information.
-3. When executing specialized bytecode, check that our assumptions hold true (
-   this is called *guards*). If the guards fail, fall back on the general
+2. The adaptive instruction finds a specialized (faster) instruction to use for
+   its current scenario. If found, swap out the adaptive instruction for a
+   specialized one. Simultaneously, cache any useful (expensive) information.
+3. When executing specialized bytecode, check that our assumptions hold true
+   (this is called *guards*). If the guards fail, fall back on the general
    instruction. If the guards fail frequently, deoptimize the instruction back
    to the general or adaptive instruction.
 
 ### Example -- LOAD_GLOBAL_BUILTIN
 
-An example makes this easier to understand. The
-following code:
+An example makes this easier to understand. The following code:
 
 ```python
 def f():
@@ -63,7 +60,7 @@ specialization.
 
 Following the main steps taken by the interpreter (outlined above):
 
-1. `LOAD_GLOBAL` becomes LOAD_GLOBAL_ADAPTIVE after being executed eight times.
+1. `LOAD_GLOBAL` becomes `LOAD_GLOBAL_ADAPTIVE` after being executed eight times.
 2. `LOAD_GLOBAL_ADAPTIVE` finds that `len` belongs to the `__builtins__` module.
    So it overwrites itself with `LOAD_GLOBAL_BUILTIN`. Simultaneously, cache the
    index of the `len` object inside `__bulitins__.__dict__` (this is the
@@ -81,10 +78,10 @@ but the most common case is accessing a builtin object.
 
 Here’s the actual code for the steps in CPython:
 
-- https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L1565
-- https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L3159
-  and https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/specialize.c#L1008
-- https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L3197
+1. https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L1565
+2. https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L3159
+   and https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/specialize.c#L1008
+3. https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L3197
 
 `LOAD_GLOBAL_BUILTIN` was used for teaching purposes, but a similar idea has
 already been implemented since Python 3.8 (using a very different
@@ -153,4 +150,5 @@ have to write public user docs since they’re a private implementation detail ;
 . During tracing or inspection, the old (non-combined) instruction is shown
 instead.
 
+### Specialized Instructions
 To learn more about the specialized opcodes, read them [here](./opcodes.md).
