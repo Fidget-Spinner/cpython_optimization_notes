@@ -1,6 +1,8 @@
 # Specialized Opcodes
 
-Does not include combined/super instructions.
+Does not include combined/super instructions. For this section, I'll include
+links to source code. It's best to open the code and these note side-by-side to
+understand what's happening.
 
 ## LOAD_GLOBAL
 
@@ -8,13 +10,14 @@ The compiler emits `LOAD_GLOBAL` when it sees a name that isn't assigned in the
 local scope, and isn't in a closure.
 
 Overall speedup: Unknown, but likely small in pyperformance. `LOAD_GLOBAL` already
-had opcache (see “History”).
+had opcache (see "History").
 
 (Specialization and porting over from older infrastructure by Mark
 in https://bugs.python.org/issue44338).
 
 ### LOAD_GLOBAL_BUILTIN
 
+[Link to code](https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L3197-L3216).
 (Covered in-depth in [this example](./README.md#example----load_global_builtin))
 
 Specialized for loading values from the `__builtins__` module.
@@ -36,6 +39,8 @@ Specialization reduces `LOAD_GLOBAL` from two dictionary lookups (one for
 `LOAD_GLOBAL` can be made faster by only unboxing values or JIT.
 
 ### LOAD_GLOBAL_MODULE
+
+[Link to code](https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L3179-L3195).
 
 Specialized for loading a global variable in `globals()`. Avoids one dict lookup
 in `globals()` by caching index of object in the `globals()` dictionary. Need to
@@ -94,39 +99,45 @@ Overall speedup from specialization:
 [1.02x faster pyperformance](https://github.com/python/cpython/pull/27722#issuecomment-898308598)
 in initial implementation.
 
-Read “Background & History” to learn more about `LOAD_METHOD`, and the type MRO
+Read "Background & History" to learn more about `LOAD_METHOD`, and the type MRO
 method cache (and `tp_version_tag`).
 
 (Specialization by me, reviewed by Mark in https://bugs.python.org/issue44889.)
 
 ### LOAD_METHOD_CACHED
 
+[Link to code](https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L4461-L4496).
+Keep the code open beside these notes to understand better.
+
 Any object that successfully loads an unbound method is specialized to this. The
 object *must not* have an attribute shadowing the method name. At specialization
-time, the unbound method object is cached (borrowed reference). For a method
-call of the form `self.meth()`, at runtime, we need to verify that:
+time, the unbound method is cached (borrowed reference).
 
-1. `type(self)`'s MRO was not modified. This is done via validating `type(self)
+For code like `self.meth()`, the normal `LOAD_METHOD` convention is to call
+`_PyObject_GetMethod` which:
+
+1. Calls `_PyType_Lookup`. This walks MRO of `type(self)`. 
+2. Applies descriptor protocol if necessary.
+3. If `self` has a namespace (`__dict__`), check if the method is shadowed
+   inside `self`'s namespace. If found, return the attribute, else return step
+   2.'s result.
+
+For a specialized method call of the form , at runtime, we need to verify that:
+
+1. `type(self)`'s MRO was not modified. This means validating `type(self)
    .tp_version_tag` (the type's unique version tag). This is a unique uint32
-   that resets to 0 whenever anything along a type's MRO (or the
-   type's `__dict__` itself) is modified. It is also used in Python 2.6's method
-   lookup cache (see [“Background & History”](#background-&-history)).
+   that resets to 0 whenever anything along a type's MRO is modified. It is
+   also used in Python 2.6's method lookup cache
+   (see ["Background & History"](#background-&-history)).
 
-2. `self.__dict__` keys didn't change by checking dict key's version. This
+2. `self.__dict__` keys didn't change. Check dict key's version. This
    ensures that the method isn't shadowed by an attribute. If the object has
    no `__dict__`: great! skip this step.
 
-The normal `LOAD_METHOD` convention is to call `_PyObject_GetMethod` which:
-
-1. Searches through `type(self).__mro__` for the method via `_PyType_Lookup`.
-   Applies descriptor protocol if necessary.
-2. If `self` has a namespace (`__dict__`), check if the method is shadowed
-   inside `self`'s namespace. If found, return that, else return step 1.'s
-   result.
-
-So we removed the `_PyType_Lookup` call, and the dictionary lookup in `self.__
-dict__.` For normal Python classes, this is a 12% speedup in microbenchmarks. The
-speedup is even greater for types with long MRO due to inheritance. For built-in
+By specializing, we removed the `_PyType_Lookup` call, and the dictionary lookup
+in `self.__dict__.` For normal Python classes, this is a 12% speedup in
+microbenchmarks. The speedup is even greater for types with inherited methods
+and long MRO (>20% for just single inheritance). For builtin
 types (such as `dict`, `list`, `int`), there is almost no speedup for their method
 loads since they have no `__dict__`, and the method is likely already cached
 in `_PyType_Lookup`'s method cache.
@@ -135,7 +146,7 @@ With two cheap uint32 comparisons and some pointer arithmetic, we can
 immediately return a cached unbound method. This is the fastest possible method
 loading convention without reworking the object layout or a JIT.
 
-Whacky note: notice we didn't even need the method's name! Normal LOAD_METHOD
+Whacky note: notice we didn't even need the method's name! Normal `LOAD_METHOD`
 requires the name of the method being loaded, `LOAD_METHOD_CACHED` doesn't.
 
 You might also be wondering how we can verify that the borrowed reference to an
@@ -205,7 +216,7 @@ paving the way to what we have in 3.11 today :).
 
 Previously, method calls used `LOAD_ATTR` and `CALL_FUNCTION`. `LOAD_METHOD` and
 `CALL_METHOD` were added in CPython 3.7 (first done by PyPy). In short, it speeds
-up method calls by avoiding temporary objects (“bound methods”). When you write
+up method calls by avoiding temporary objects ("bound methods"). When you write
 self.meth(), usually the method `meth` takes in `self` as the first argument (
 this is also called an instance method). How Python actually implements this is
 by doing the equivalent logic in C:
@@ -216,7 +227,7 @@ bound_method()
 ```
 
 (To learn more about `__get__`, read up on the descriptor protocol). The point is
-that a temporary object called a “bound method” is eventually created just to
+that a temporary object called a "bound method" is eventually created just to
 get our behavior above. A bound method is nothing more than a wrapper object to
 pass `self` as the first argument to a callable being wrapped [1].
 
@@ -264,6 +275,8 @@ in initial implementation.
 .)
 
 ### BINARY_SUBSCR_LIST_INT, BINARY_SUBSCR_TUPLE_INT
+
+[Link to code](https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/ceval.c#L2164-L2186).
 
 Specialized form for subscripting a list or tuple object with a number that fits
 into a C machine int (usually 32 bits). So `list[int]` or `tuple[int]`. The speedup

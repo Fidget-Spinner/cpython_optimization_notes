@@ -90,7 +90,7 @@ infrastructure). You can read more in "Prior work". At the time, it provided a ~
 
 Documents providing a technical deep-dive:
 
-- Instruction/bytecode layout and how swapping
+- Instruction/bytecode memory layout and how swapping
   works https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/specialize.c#L15
 - Adding adaptive instructions how-to
   guide https://github.com/python/cpython/blob/b34dd58fee707b8044beaf878962a6fa12b304dc/Python/adaptive.md
