@@ -85,8 +85,8 @@ Here’s the actual code for the steps in CPython:
 
 `LOAD_GLOBAL_BUILTIN` was used for teaching purposes, but a similar idea has
 already been implemented since Python 3.8 (using a very different
-infrastructure). You can read more in "Prior work". At the time, it provided a ~
-2-4% speed boost to pyperformance.
+infrastructure). You can read more in [`LOAD_GLOBAL`'s history](./opcodes#History).
+At the time, it provided a ~2-4% speed boost to pyperformance.
 
 Documents providing a technical deep-dive:
 
