@@ -229,7 +229,7 @@ bound_method()
 (To learn more about `__get__`, read up on the descriptor protocol). The point is
 that a temporary object called a "bound method" is eventually created just to
 get our behavior above. A bound method is nothing more than a wrapper object to
-pass `self` as the first argument to a callable being wrapped [1].
+pass `self` as the first argument to a callable being wrapped [^1].
 
 On every call, the temporary bound method is created then immediately discarded
 after the call. If you call a method frequently, this is really expensive! So in
@@ -244,7 +244,7 @@ unbound_method(self)
 
 So we got a ~20% speedup for method calls in 3.7.
 
-[1]:
+[^1]:
 To verify my claims:
 
 ```python

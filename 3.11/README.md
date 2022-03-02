@@ -10,6 +10,7 @@
 - [ ] Inlined Python calls
 
 ### PEP 659 Specializing Adaptive Interpreter
+- [X] [Lazy, cheaper frames](./faster_cpython/lazy_frame.md).
 - [X] [Specialization](./faster_cpython/pep_659/README.md)
 - [X] [Superinstructions/Combined instructions](./faster_cpython/pep_659/README.md#superinstructionscombined-instructions)
 - [Opcodes](./faster_cpython/pep_659/opcodes.md):

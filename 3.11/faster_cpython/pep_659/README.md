@@ -130,7 +130,13 @@ unpacking microbenchmarks). That’s because there’s high overhead in other ar
 in CPython. Once other optimizations are applied, interpreter overhead will be
 greater and combined instructions will shine.
 
-[^1]
+Another possibility for speedups via combined instructions is to avoid redundant
+stack manipulation. E.g. a two `LOAD_FAST`s followed by a `BINARY_ADD` require
+2 stack pushes, 2 stack pops, and a finally pushing the result to the stack.
+A potential combined instruction can eliminate the first 2 stack pushes and
+pops.
+
+[^1]:
 LOAD_FAST__LOAD_FAST: https://github.com/python/cpython/blob/07cf10bafc8f6e1fcc82c10d97d3452325fc7c04/Python/ceval.c#L1755
 
 Specializer code
