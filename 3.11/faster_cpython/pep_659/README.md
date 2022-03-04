@@ -10,7 +10,7 @@ instructions (termed bytecode) for the CPython interpreter to execute. Most
 bytecodes are extremely generalized to simplify the interpreter. This is where
 the idea of specialization comes in -- if we can create specialized bytecode for
 certain commonly-executed operations, then we can greatly boost their
-performance! The other main idea is
+performance! The other main idea is similar to
 [inline caching](https://en.wikipedia.org/wiki/Inline_caching), which caches
 the result of an expensive operation at the instruction itself.
 

@@ -1,8 +1,7 @@
 # Specialized Opcodes
 
-Does not include combined/super instructions. For this section, I'll include
-links to source code. It's best to open the code and these note side-by-side to
-understand what's happening.
+**Note**: For this section, it's best to open the source code in and these note side-by-side
+to understand what's happening.
 
 ## LOAD_GLOBAL
 

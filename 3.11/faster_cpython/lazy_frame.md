@@ -1,4 +1,4 @@
-# Lazy, Cheaper Frames
+# Cheaper, Lazy Python Frames
 
 ## Background
 
@@ -36,7 +36,7 @@ less likely over time.
 The name "lazy" means that the full pre-3.11 `PyFrameObject` is only created when
 the user tries to directly access it via something like `sys._getframe()`.
 This maintains compatibility with older code. Luckily, most normal user code
-doesn't touch the frame object directly so most code is sped up by using cheaper
+doesn't touch the frame object directly and benefit by using cheaper
 frames. Read more [here](https://github.com/python/cpython/pull/27077#issuecomment-878221201).
 
 Altogether, this sped up pyperformance by

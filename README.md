@@ -1,12 +1,13 @@
 # CPython Optimization Notes
 
 ## Introduction
-CPython is the reference implementation of the Python programming language
-(https://docs.python.org/3/glossary.html). In this document, I’ll summarise
-major speedups to the core parts of CPython which will make 3.11
-(coming in 2022) measurably faster than 3.10. I only plan to cover optimizations
-that shift  macrobenchmarks such as pyperformance. There are too many
-optimizations done by brilliant people in other parts of CPython for me to list.
+[CPython](https://docs.python.org/3/glossary.html) is the reference
+implementation of the Python programming language.
+
+In this document, I’ll summarise major speedups to the core parts of CPython
+in the following versions:
+
+- 3.11
 
 To get the most out of this, you should have knowledge of Python (especially in
 data model/dunder methods). Being able to read C is also a plus though not

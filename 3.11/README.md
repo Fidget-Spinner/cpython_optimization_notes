@@ -6,11 +6,10 @@
 - [ ] Frozen startup imports
 
 ### Faster Python function calls
-- [ ] Cheaper Python frames
+- [X] [Cheaper, Lazy Python Frames](./faster_cpython/lazy_frame.md)
 - [ ] Inlined Python calls
 
 ### PEP 659 Specializing Adaptive Interpreter
-- [X] [Lazy, cheaper frames](./faster_cpython/lazy_frame.md).
 - [X] [Specialization](./faster_cpython/pep_659/README.md)
 - [X] [Superinstructions/Combined instructions](./faster_cpython/pep_659/README.md#superinstructionscombined-instructions)
 - [Opcodes](./faster_cpython/pep_659/opcodes.md):
