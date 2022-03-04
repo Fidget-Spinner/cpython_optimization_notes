@@ -42,3 +42,6 @@
     - [ ] STORE_ATTR_SLOT
 - [X] [Prior work & historical ramblings](./faster_cpython/pep_659/ramblings.md)
 
+### Misc.
+
+- [X] [Compact Object Layouts](./faster_cpython/compact_objects.md) 
