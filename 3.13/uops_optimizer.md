@@ -27,9 +27,9 @@ compiler.
 ## Analysis
 
 We plan to generate majority of the analysis and optimization passes
-automatically, by defining bytecode semantics in the. This will reduce
-the maintenance burden and lines of code that has to be checked into
-CPython. The general goal is that while certain instructions with
+automatically, by defining bytecode semantics in the interpreter defintion.
+This will reduce the maintenance burden and lines of code that has to be
+checked into CPython. The general goal is that while certain instructions with
 special meaning to CPython have to be handwritten, the
 vast majority of other Python instructions's behavior in the
 interpreter can be automatically inferred from the DSL.
@@ -46,12 +46,9 @@ in the interpreter DSL:
 1. ``pure`` - like in functional languages,
 these instructions have no side effects to the user, they
 allow for greater optimizations.
-2. ``impure`` - everything that is not the above.
-3. ``guard`` - these instructions pass nodes through themselves.
+2. ``guard`` - these instructions pass nodes through themselves.
+3. ``impure`` - everything that is not the above.
 
-An extra modified - ``mandatory`` indicates that an instruction is
-always required and cannot be eliminated by static analysis. An example
-is state guards like checks for PEP 523.
 
 ### Intermediate Representation (IR)
 
@@ -81,7 +78,7 @@ null    := CALL(thing1)
 
 The author previously experimented with SSA graphs (Lemerre, 2023)
 for the IR, and researched the Sea of Nodes (Click & Paleczny
-, 1995). However, we have decided with this simpler IR for a few
+, 1995). However, I have decided with this simpler IR for a few
 reasons:
 
 1. It is requires less memory to represent.
@@ -129,10 +126,10 @@ expressed as part of the interpreter DSL:
 
 ```
 // Typed outputs means the types are these types after the operation.
-pure op(_BINARY_OP_ADD_INT, (left, right -- res: ~(PYINT_TYPE))) {
+pure op(_BINARY_OP_ADD_INT, (left, right -- res: ~(PYLONG_TYPE))) {
 }
 
-// Typed output with auxillary type informatino (type_version)
+// Typed output with auxillary type information (type_version)
 guard op(_GUARD_TYPE_VERSION, (type_version/2, owner -- owner: ~(GUARD_TYPE_VERSION_TYPE + type_version))) {
 }
 ```
@@ -208,7 +205,7 @@ Before a function call, the stack looks like this:
 |----------|--------------|------|-------------------|
 |          |              |      | ^ (stack pointer) |
 
-Notice that the arguments are already layed out in how the locals
+Notice that the arguments are already laid out as how the locals
 of the new "frame" will be. Thus, we just need to expand the stack
 to accomodate for more locals. Finally, since we are now pointing
 into the current stack as our locals, we offset all `LOAD_FAST`
