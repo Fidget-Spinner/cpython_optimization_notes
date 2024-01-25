@@ -36,10 +36,8 @@ interpreter can be automatically inferred from the DSL.
 
 To generate the intermediate representation, and perform
 some optimizations, we shall use an abstract interpreter over the
-Tier 2 uops. The abstract interpreter operates on and generates the IR
-below by operating on symbolic terms (as defined in the paper
-"SSA Translation Is an Abstract Interpretation" by Matthieu Lemerre
-in POPL 2023).
+Tier 2 uops. The abstract interpreter performs a traditional form
+of data-flow analysis.
 
 CPython uops are then classified into 3 main types
 in the interpreter DSL:
@@ -206,7 +204,8 @@ This is not to be confused with scalar replacement.
 
 ### Limited value numbering
 
-A limited form of (value numbering)[https://en.wikipedia.org/wiki/Value_numbering] is 
+A limited form of [value numbering](https://en.wikipedia.org/wiki/Value_numbering)
+is implemented.
 ```
 x = y
 # This has _GUARD_BOTH_INT
@@ -218,14 +217,9 @@ x + x
 We want the second guard to be eliminated. The analyzer should see
 that they are the same values.
 
+The value numbering is not enough to extend to common subexpressions.
+This is out of the scope for a simple tier 2 optimizer.
 
-### [Tentative] Common subexpression elimination
-
-We will factor our common expressions by hash-consing the symbolic term
-nodes.
-
-This is tentative, as the cost of this on the optimizer's memory
-and speed footprint is yet to be determined.
 
 ## Memory usage
 The intermediate representation's expression nodes shall be allocated
