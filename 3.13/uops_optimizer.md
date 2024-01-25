@@ -52,50 +52,7 @@ allow for greater optimizations.
 
 ### Intermediate Representation (IR)
 
-The intended intermediate representation is a hybrid of assignments,
-plain instructions, and symbolic terms. That is, for the
-following Python code:
-
-```python
-x = a + b + c
-call(thing)
-```
-
-It will produce the following IR (assuming no guards are required):
-```
-x    := BINARY_OP_ADD_INT(a1, BINARY_OP_ADD_INT(b1, c1))
-null := CALL(thing1)
-```
-
-When guards are required, these are raw instructione entries:
-```
-stack0  := INIT_FAST a1
-stack1  := INIT_FAST b1
-ir_inst(GUARD_BOTH_INT)
-x       := BINARY_OP_ADD_INT(c1, BINARY_OP_ADD_INT(stack0, stack1))
-null    := CALL(thing1)
-```
-
-The author previously experimented with SSA graphs (Lemerre, 2023)
-for the IR, and researched the Sea of Nodes (Click & Paleczny
-, 1995). However, I have decided with this simpler IR for a few
-reasons:
-
-1. It is requires less memory to represent.
-2. It is less complex.
-3. Guards represent strict instruction orderings
-between tiers for cheap and easy deoptimization. The graph-based IRs
-currently do not guarantee that without some form of ordering and state
-information encoded in. A graph-based IR may be more suitable for Tier 3,
-where reconstructing the stack and locals state of the interpreter may
-be feasible.
-4. Guards also represent strict dependencies in control-flow, requiring
-more instruction scheduling in graph-based IRs.
-
-By using a hybrid of symbolic terms, assignments, and plain instructions,
-we inherently encode the proper order of instructions, while obtaining
-some benefit from graph-based IRs: namely their ability to combine
-multiple optimizations into a single pass (which you will see below).
+The intended intermediate representation is the micro-ops themselves.
 
 ## Optimization
 
@@ -110,19 +67,18 @@ in the type system, for example, dictionary versions or type verions.
 These rules follow deductive steps. Type information is propagated forwards.
 For example, in the IR:
 ```
-stack0  := INIT_FAST a1
-stack1  := INIT_FAST b1
-# types: (a1: unknown, b1: unknown)
-ir_inst(GUARD_BOTH_INT)
-# types: (a1: int, b1: int)
-x       := BINARY_OP_ADD_INT(c1, BINARY_OP_ADD_INT(stack0, stack1))
-# types: (a1: int, b1: int, x: int)
-null    := CALL(thing1)
+# locals: [a: unknown, b: unknown, c: unknown]
+# stack:  [a: unknown, b: unknown]
+GUARD_BOTH_INT
+# locals: [a: int, b: int, c: unknown]
+# stack:  [a: int, b: int]
 ```
 
 The key part is that type and constant propagation is done automatically,
 without having to handwrite these deductive rules ourselves. Types are
 expressed as part of the interpreter DSL:
+
+Note that the following output above implies some sort of value numbering.
 
 ```
 // Typed outputs means the types are these types after the operation.
@@ -134,7 +90,7 @@ guard op(_GUARD_TYPE_VERSION, (type_version/2, owner -- owner: ~(GUARD_TYPE_VERS
 }
 ```
 
-The abstract interpreter's then automatically generates all of the
+The abstract interpreter's then automatically generates nearly all of the
 cases. With types, we can then eliminate type guards that are not
 required, thus shrinking the code we eventually pass to the JIT
 compiler.
@@ -248,11 +204,9 @@ all function frame require for object creation.
 
 This is not to be confused with scalar replacement.
 
-### Value numbering
+### Limited value numbering
 
-To remove redundant operations on things that are functionally equivalent,
-we should implement symbolic terms via value numbering. For example, in
-the following code:
+A limited form of (value numbering)[https://en.wikipedia.org/wiki/Value_numbering] is 
 ```
 x = y
 # This has _GUARD_BOTH_INT
