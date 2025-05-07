@@ -17,8 +17,7 @@ There are two main issues faced with single call stacks:
 
 The impact of point 1. alone is wide-reaching. Traversing frames
 is a common operation done by out-of-memory profilers, and free-threaded
-CPython (see `PyUnstable_Object_IsUniqueReferencedTemporary` and the
-free-threaded GC). Improving these would have substantial impact on both
+CPython (see free-threaded GC). Improving these would have substantial impact on both
 these applications.
 
 Point 2. is mainly applicable if we want "full" function inlining without
@@ -98,8 +97,8 @@ because we don't need to write `previous` anymore. So this nets to zero writes.
 Additionally, the frame bump allocator
 that CPython currently uses should exhaust much slower in the case of recursive calls,
 as it will only consume the second (locals) call stack, not the first one.
-Lastly, the performance improvements from making `PyUnstable_Object_IsUniqueReferencedTemporary`
-significantly cheaper on the free-threaded build will likely make this
+Lastly, the performance improvements from making GC mark/sweep 
+cheaper on the free-threaded build will likely make this
 more than worth it. A reminder that this replaced the `Py_REFCNT(op) == 1` optimization
 that libraries like `numpy` use to reuse objects.
 
