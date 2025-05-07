@@ -75,19 +75,17 @@ The dual call stack layout would look something like this:
 -->
 ```mermaid
 erDiagram
-    _PyInterpreterControlFrame ||--||{ _PyInterpreterLocalsFrame : matches
-    _PyInterpreterControlFrame {
-        _PyStackRef f_executable;
-        struct _PyInterpreterFrame *previous; %% We only need this when yielding to generators and backtraces (see genobject.c)
-        _PyStackRef f_funcobj;
-        PyObject *f_globals;
-        ...
-        uint8_t visited;
-        _PyInterpreterLocalsFrame *localsplus_frame;
+    CONTROL_FRAME ||--|| LOCALS_FRAME : contains
+    CONTROL_FRAME {
+        _PyStackRef* f_executable
+        _PyInterpreterFrame* previous
+        _PyStackRef *f_funcobj
+        PyObject* f_globals
+        Rest the_rest
+        LOCALS_FRAME* localsplus_frame
     }
-
-    _PyInterpreterLocalsFrame {
-        _PyStackRef localsplus[1];
+    LOCALS_FRAME {
+        _PyStackRef localsplus[1]
     }
 ```
 
