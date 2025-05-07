@@ -16,8 +16,7 @@ There are two main issues faced with single call stacks:
 2. Reconstructing frames in the case of function inlining is complicated.
 
 The impact of point 1. alone is wide-reaching. Traversing frames
-is a common operation done by out-of-memory profilers, and free-threaded
-CPython (see free-threaded GC). Improving these would have substantial impact on both
+is a common operation done by out-of-memory profilers. Improving these would have substantial impact on both
 these applications.
 
 Point 2. is mainly applicable if we want "full" function inlining without
@@ -97,10 +96,6 @@ because we don't need to write `previous` anymore. So this nets to zero writes.
 Additionally, the frame bump allocator
 that CPython currently uses should exhaust much slower in the case of recursive calls,
 as it will only consume the second (locals) call stack, not the first one.
-Lastly, the performance improvements from making GC mark/sweep 
-cheaper on the free-threaded build will likely make this
-more than worth it. A reminder that this replaced the `Py_REFCNT(op) == 1` optimization
-that libraries like `numpy` use to reuse objects.
 
 The initial naiive implementation may use an extra register in the tail-calling
 interpreter for the control frame pointer. This can be offset by some tricks
@@ -108,3 +103,7 @@ to store the `tstate` variable at a fixed offset from the control stack. This wi
 save us on the register, making the total register usage to be zero. Alternatively,
 we can store a `tstate` field in the control frame pointing to the real tstate.
 
+
+## Open problems
+
+How to handle line numbers?
